@@ -100,7 +100,7 @@ pub fn print_pdf(printer_name: &str, pdf_file_path: &Path) -> Result<(), String>
 
     #[cfg(windows)]
     {
-        use winprint::printer::{FilePrinter, PdfiumPrinter, PrinterDevice};
+        use winprint::printer::{FilePrinter, WinPdfPrinter, PrinterDevice};
         use winprint::ticket::PrintTicketBuilder;
 
         let device = PrinterDevice::all()
@@ -114,7 +114,7 @@ pub fn print_pdf(printer_name: &str, pdf_file_path: &Path) -> Result<(), String>
             .build()
             .map_err(|e| format!("Failed to build print ticket: {}", e))?;
 
-        PdfiumPrinter::new(device)
+        WinPdfPrinter::new(device)
             .print(pdf_file_path, ticket)
             .map_err(|e| format!("PDF print failed: {:?}", e))
     }
