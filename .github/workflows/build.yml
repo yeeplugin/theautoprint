@@ -55,6 +55,6 @@ jobs:
           tagName: app-v__VERSION__ # tauri-action replaces this with the app version automatically
           releaseName: "The Auto Print v__VERSION__"
           releaseBody: "See the assets below to install."
-          releaseDraft: true
+          releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}
