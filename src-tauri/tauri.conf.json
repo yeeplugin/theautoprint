@@ -39,9 +39,11 @@
         "resources/pdfium.dll"
       ],
       "windows": {
+        "webviewInstallMode": {
+          "type": "downloadBootstrapper",
+          "silent": true
+        },
         "nsis": {
-          "download_webview2_installer": true,
-          "embed_webview2_installer": false,
           "installerHooks": "./hooks.nsh"
         }
       }
