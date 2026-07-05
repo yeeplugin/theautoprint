@@ -1,0 +1,35 @@
+[package]
+name = "woo-auto-printer"
+version = "0.1.0"
+description = "WooCommerce Auto Order Printer"
+authors = ["you"]
+edition = "2021"
+
+[lib]
+name = "woo_auto_printer_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon"] }
+tauri-plugin-opener = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }
+tokio = { version = "1", features = ["full"] }
+base64 = "0.22"
+chrono = { version = "0.4", features = ["serde"] }
+dirs = "6"
+# Native, cross-platform printing (CUPS on macOS/Linux, winspool on Windows).
+# Replaces all lpstat/lpoptions/lp/powershell/msedge shell-outs.
+printers = "2"
+
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+tauri-plugin-autostart = "2"
+tauri-plugin-single-instance = "2"
+
+# Silent native PDF printing on Windows (renders via PDFium, no Edge/PowerShell).
+[target.'cfg(windows)'.dependencies]
+winprint = { version = "0.2", features = ["pdfium"] }
