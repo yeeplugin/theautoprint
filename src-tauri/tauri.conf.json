@@ -13,8 +13,8 @@
           "title": "",
           "width": 1100,
           "height": 720,
-          "minWidth": 900,
-          "minHeight": 600,
+          "minWidth": 600,
+          "minHeight": 300,
           "center": true,
           "decorations": true,
           "resizable": true,
@@ -34,6 +34,16 @@
         "icons/128x128@2x.png",
         "icons/icon.icns",
         "icons/icon.ico"
-      ]
+      ],
+      "resources": [
+        "resources/pdfium.dll"
+      ],
+      "windows": {
+        "nsis": {
+          "download_webview2_installer": true,
+          "embed_webview2_installer": false,
+          "installerHooks": "./hooks.nsh"
+        }
+      }
     }
   }

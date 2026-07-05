@@ -32,4 +32,4 @@ tauri-plugin-single-instance = "2"
 
 # Silent native PDF printing on Windows (renders via PDFium, no Edge/PowerShell).
 [target.'cfg(windows)'.dependencies]
-winprint = { version = "0.2" }
+winprint = { version = "0.2", features = ["pdfium"] }
