@@ -42,7 +42,23 @@ jobs:
         run: |
           mkdir -p build msix_stage/src-tauri/icons
           cp AppxManifest.xml msix_stage/
-          cp "src-tauri/target/release/The Auto Print.exe" msix_stage/
+          
+          # Tìm file .exe trong các đường dẫn target release có thể có
+          EXE_PATH=""
+          if [ -f "src-tauri/target/release/woo-auto-printer.exe" ]; then
+            EXE_PATH="src-tauri/target/release/woo-auto-printer.exe"
+          elif [ -f "src-tauri/target/x86_64-pc-windows-msvc/release/woo-auto-printer.exe" ]; then
+            EXE_PATH="src-tauri/target/x86_64-pc-windows-msvc/release/woo-auto-printer.exe"
+          fi
+          
+          if [ -z "$EXE_PATH" ]; then
+            echo "ERROR: Could not find woo-auto-printer.exe in target directories!"
+            exit 1
+          fi
+          
+          echo "Found compiled executable at: $EXE_PATH"
+          cp "$EXE_PATH" "msix_stage/The Auto Print.exe"
+          
           cp src-tauri/icons/128x128.png msix_stage/src-tauri/icons/
           cp src-tauri/icons/32x32.png msix_stage/src-tauri/icons/
           makeappx pack /d msix_stage /p build/woo-auto-printer.msix
