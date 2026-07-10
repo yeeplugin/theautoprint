@@ -63,7 +63,9 @@ jobs:
           Copy-Item src-tauri/icons/128x128.png msix_stage/src-tauri/icons/
           Copy-Item src-tauri/icons/32x32.png msix_stage/src-tauri/icons/
           
-          & "C:\Program Files (x86)\Windows Kits\10\bin\10.0.19041.0\x64\makeappx.exe" pack /d msix_stage /p build/woo-auto-printer.msix
+          $makeappxPath = (Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\bin\10.*\x64\makeappx.exe" | Select-Object -First 1).FullName
+          Write-Host "Found makeappx at: $makeappxPath"
+          & $makeappxPath pack /d msix_stage /p build/woo-auto-printer.msix
         shell: powershell
 
       # ─── Ký số file MSIX (Chỉ cần thiết nếu cài đặt thủ công, Microsoft Store sẽ tự động ký khi upload) ───
@@ -73,7 +75,9 @@ jobs:
           HAS_PFX: ${{ secrets.PFX_CERTIFICATE != '' }}
         run: |
           [System.IO.File]::WriteAllBytes("cert.pfx", [System.Convert]::FromBase64String("${{ secrets.PFX_CERTIFICATE }}"))
-          & "C:\Program Files (x86)\Windows Kits\10\bin\10.0.19041.0\x64\signtool.exe" sign /fd sha256 /a /f cert.pfx /p "${{ secrets.PFX_PASSWORD }}" build/woo-auto-printer.msix
+          $signtoolPath = (Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\bin\10.*\x64\signtool.exe" | Select-Object -First 1).FullName
+          Write-Host "Found signtool at: $signtoolPath"
+          & $signtoolPath sign /fd sha256 /a /f cert.pfx /p "${{ secrets.PFX_PASSWORD }}" build/woo-auto-printer.msix
         shell: powershell
 
       # ─── Lưu trữ sản phẩm sau khi build xong ─────────────────────────────────
