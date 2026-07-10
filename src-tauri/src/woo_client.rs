@@ -61,14 +61,14 @@ pub async fn test_connection(
         let wc_version = body["environment"]["version"].as_str().unwrap_or("Unknown");
 
         Ok(format!(
-            "✅ Kết nối thành công!\nStore: {}\nWooCommerce: v{}",
+            "✅ Connection successful!\nStore: {}\nWooCommerce: v{}",
             store_name, wc_version
         ))
     } else if status.as_u16() == 401 {
-        Err("❌ Sai Consumer Key hoặc Consumer Secret".to_string())
+        Err("❌ Invalid Consumer Key or Consumer Secret".to_string())
     } else {
         let error_text = response.text().await.unwrap_or_default();
-        Err(format!("❌ Lỗi {}: {}", status.as_u16(), error_text))
+        Err(format!("❌ Error {}: {}", status.as_u16(), error_text))
     }
 }
 

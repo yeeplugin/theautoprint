@@ -46,7 +46,9 @@
                         <span class="material-icons-outlined" style="font-size:18px;">logout</span>
                         <span>Sign Out</span>
                     </button>
-                    <p id="computer-name-label" style="font-size: 10px; opacity: 0.65; margin: 0; text-align: center; font-weight: 500; font-family: -apple-system, BlinkMacSystemFont, inherit;"></p>
+                    <p id="computer-name-label"
+                        style="font-size: 10px; opacity: 0.65; margin: 0; text-align: center; font-weight: 500; font-family: -apple-system, BlinkMacSystemFont, inherit;">
+                    </p>
                     <p style="font-size: 10px; opacity: 0.4; margin: 0; text-align: center;">YeePrint Client v1.0.0</p>
                 </div>
             </div>
@@ -173,6 +175,18 @@
                                 start your computer.</p>
                         </div>
 
+                        <div class="form-group" style="margin-top: 24px;">
+                            <label>
+                                <span class="material-icons-outlined label-icon">notifications</span> Notification Preferences
+                            </label>
+                            <div class="checkbox-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="notifications-toggle"> Enable desktop notifications for new print jobs
+                                </label>
+                            </div>
+                            <p class="form-hint">Receive a desktop notification popup whenever a new print order is received from the cloud.</p>
+                        </div>
+
                         <div class="form-actions">
                             <button class="btn btn-primary" id="btn-save-settings">
                                 <span class="material-icons-outlined">save</span> Save Settings
@@ -207,8 +221,7 @@
         <div class="login-card">
             <div class="login-header">
                 <span class="material-icons-outlined login-logo">lock</span>
-                <h2>YeePrint Cloud</h2>
-                <p>Log in with your add-ons.org account credentials</p>
+                <h2>TheAutoPrint.com</h2>
             </div>
             <div class="login-form">
                 <div class="form-group">
@@ -232,19 +245,26 @@
                     <hr
                         style="position: absolute; top: 50%; left: 0; right: 0; border: none; border-top: 1px solid #e2e8f0; margin: 0; z-index: 0;">
                 </div>
-                <button id="btn-google-login" class="login-btn"
-                    style="background-color: white; color: #475569; border: 1px solid #cbd5e1; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <button id="btn-google-login" class="login-btn-secondary">
                     <svg width="18" height="18" viewBox="0 0 24 24">
                         <path fill="#EA4335"
                             d="M12.24 10.285V14.4h6.887c-.648 2.41-2.519 4.114-5.136 4.114A5.99 5.99 0 0 1 7.996 12.5a5.99 5.99 0 0 1 5.995-6.014c1.642 0 3.124.664 4.21 1.74l3.184-3.183C19.347 3.03 16.85 1.874 13.99 1.874a10.618 10.618 0 0 0-10.6 10.627 10.617 10.617 0 0 0 10.6 10.626c5.848 0 9.715-4.053 9.715-9.887 0-.585-.053-1.157-.156-1.705H12.24Z" />
                     </svg>
                     Sign In with Google
                 </button>
-                <button id="btn-passkey-login" class="login-btn"
-                    style="background-color: white; color: #475569; border: 1px solid #cbd5e1; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 8px;">
+                <button id="btn-passkey-login" class="login-btn-secondary" style="margin-top: 8px;">
                     <span class="material-icons-outlined" style="font-size: 18px; color: #475569;">fingerprint</span>
                     Sign In with Passkey
                 </button>
+                <div class="login-footer-links"
+                    style="display: flex; justify-content: space-between; margin-top: 18px; font-size: 13px; font-weight: 500; font-family: -apple-system, BlinkMacSystemFont, inherit;">
+                    <a href="https://theautoprint.com/my-account/lost-password/" id="link-forgot-password"
+                        style="color: #007aff; text-decoration: none; transition: color 0.15s ease;">Forgot
+                        Password?</a>
+                    <a href="https://theautoprint.com/api/" id="link-register"
+                        style="color: #007aff; text-decoration: none; transition: color 0.15s ease;">Register
+                        Account</a>
+                </div>
             </div>
         </div>
     </div>

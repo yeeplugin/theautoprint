@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Package 
+    xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10" 
+    xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10" 
+    xmlns:uap10="http://schemas.microsoft.com/appx/manifest/uap/windows10/10" 
+    xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+    IgnorableNamespaces="uap uap10 rescap">
+
+    <!-- 
+        CẤU HÌNH ĐỊNH DANH ỨNG DỤNG (IDENTITY)
+        - Name: Tên gói ứng dụng (thường dùng dạng ngược com.domain.appname).
+        - Publisher: Bắt buộc phải trùng khớp chính xác với "Subject" của chứng chỉ PFX dùng để ký ứng dụng (ví dụ: CN=TheAutoPrint).
+        - Version: Phiên bản ứng dụng của bạn (ví dụ: 1.0.0.0).
+    -->
+    <Identity 
+        Name="TheAutoPrint.TheAutoPrint" 
+        Version="0.1.0.0" 
+        Publisher="CN=C07BB338-9F41-4FBE-8C7E-E08829359C37" 
+        ProcessorArchitecture="x64" />
+
+    <Properties>
+        <DisplayName>The Auto Print</DisplayName>
+        <PublisherDisplayName>The Auto Print</PublisherDisplayName>
+        <Description>Automatically print WooCommerce orders through YeePrint Cloud service.</Description>
+        <Logo>src-tauri/icons/128x128.png</Logo>
+    </Properties>
+
+    <Resources>
+        <Resource Language="en-us" />
+        <Resource Language="vi-vn" />
+    </Resources>
+
+    <Dependencies>
+        <!-- Windows Desktop target family và phiên bản Windows tối thiểu -->
+        <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.19041.0" MaxVersionTested="10.0.22621.0" />
+    </Dependencies>
+
+    <Capabilities>
+        <!-- Yêu cầu quyền Full Trust để chạy app Win32 (Tauri/Rust) ngoài sandbox -->
+        <rescap:Capability Name="runFullTrust"/>
+    </Capabilities>
+
+    <Applications>
+        <!-- 
+            Id: Id của ứng dụng trong package (chữ cái và số, không khoảng trắng).
+            Executable: Tên file chạy .exe được xuất ra sau khi build tauri (phần productName trong tauri.conf.json).
+        -->
+        <Application Id="TheAutoPrintApp" Executable="The Auto Print.exe" uap10:RuntimeBehavior="packagedClassicApp" uap10:TrustLevel="mediumIL">
+            <uap:VisualElements 
+                DisplayName="The Auto Print" 
+                Description="Automatically print WooCommerce orders through YeePrint Cloud service." 
+                Square150x150Logo="src-tauri/icons/128x128.png" 
+                Square44x44Logo="src-tauri/icons/32x32.png" 
+                BackgroundColor="transparent" />
+        </Application>
+    </Applications>
+</Package>

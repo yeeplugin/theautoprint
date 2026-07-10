@@ -22,7 +22,3 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-
-# Temporary debug / tool files
-.claude/
-debug_prints/

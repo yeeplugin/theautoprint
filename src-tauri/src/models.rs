@@ -11,6 +11,8 @@ pub struct WooSettings {
     pub broker_client_id: String,
     #[serde(default)]
     pub socket_token: String,
+    #[serde(default)]
+    pub enable_notifications: bool,
 }
 
 impl Default for WooSettings {
@@ -20,6 +22,7 @@ impl Default for WooSettings {
             broker_url: String::new(),
             broker_client_id: String::new(),
             socket_token: String::new(),
+            enable_notifications: false,
         }
     }
 }

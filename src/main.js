@@ -14,6 +14,7 @@ let printers = [];
 let printedToday = 0;
 let brokerSocket = null;
 let brokerReconnectTimeout = null;
+let brokerReconnectDelay = 5000; // grows to 60s when the server rejects us (limit/auth)
 let brokerHeartbeatInterval = null;
 let brokerPongWatchdog = null;
 let currentBrokerUrl = '';
@@ -98,6 +99,8 @@ async function loadSettings() {
             document.getElementById('broker-url').value = settings.broker_url;
         }
 
+        document.getElementById('notifications-toggle').checked = settings.enable_notifications || false;
+
         if (settings.broker_client_id) {
             document.getElementById('login-container').style.display = 'none';
             document.querySelector('.app-container').style.display = 'flex';
@@ -139,22 +142,29 @@ document.getElementById('btn-save-settings').addEventListener('click', async () 
     try {
         const brokerUrl = document.getElementById('broker-url').value.trim();
         let brokerClientId = document.getElementById('broker-client-id').value.trim();
+        const notificationEnabled = document.getElementById('notifications-toggle').checked;
 
         if (!brokerClientId) {
             brokerClientId = 'client_' + Math.random().toString(36).substring(2, 11);
             document.getElementById('broker-client-id').value = brokerClientId;
         }
 
+        if (notificationEnabled && Notification.permission !== 'granted') {
+            await Notification.requestPermission();
+        }
+
         const settings = {
             selected_printers: [],
             broker_url: brokerUrl,
             broker_client_id: brokerClientId,
+            enable_notifications: notificationEnabled,
         };
 
-        // Preserve selected_printers from current state
+        // Preserve selected_printers and socket_token from current state
         try {
             const current = await invoke('get_settings');
             settings.selected_printers = current.selected_printers || [];
+            settings.socket_token = current.socket_token || '';
         } catch (e) { /* ignore */ }
 
         await invoke('save_settings', { settings });
@@ -181,7 +191,7 @@ document.getElementById('btn-save-settings').addEventListener('click', async () 
         showToast('Failed to save settings: ' + e, 'error');
     } finally {
         btn.disabled = false;
-        btn.innerHTML = '<span>💾</span> Save Settings';
+        btn.innerHTML = 'Save Settings';
     }
 });
 
@@ -191,6 +201,25 @@ document.getElementById('btn-save-settings').addEventListener('click', async () 
 
 async function fetchBrokerUrl() {
     return 'wss://theautoprint.com/yp-broker/';
+}
+
+// Cached computer name. EVERY register message must include computer_name —
+// the broker groups printers by it, and a register without it collapses all
+// printers into one "Unknown Computer" group on the dashboard.
+let cachedComputerName = null;
+async function getComputerName() {
+    if (cachedComputerName) return cachedComputerName;
+    let name = 'Unknown Computer';
+    try {
+        name = await invoke('get_computer_name');
+        if (name.endsWith('.local')) {
+            name = name.slice(0, -6);
+        }
+    } catch (e) {
+        console.error('Failed to get computer name:', e);
+    }
+    cachedComputerName = name;
+    return name;
 }
 
 async function initWebSocket(settings) {
@@ -211,6 +240,13 @@ async function initWebSocket(settings) {
 
     const clientId = settings.broker_client_id;
     const token = settings.socket_token || '';
+
+    // Enforce selection of at least 1 printer
+    if (!settings.selected_printers || settings.selected_printers.length === 0) {
+        disconnectBroker();
+        updateBrokerUI('disconnected', 'No Printer Selected');
+        return;
+    }
 
     if (url && clientId) {
         connectToBroker(url, clientId, token);
@@ -237,7 +273,7 @@ function connectToBroker(url, clientId, token) {
     currentBrokerClientId = clientId;
     currentBrokerToken = token;
 
-    console.log(`🔌 Connecting to Cloud Broker: ${url} (Client: ${clientId})`);
+    console.log(`Connecting to Cloud Server: https://theautoprint.com (Client: ${clientId})`);
     updateBrokerUI('connecting', 'Connecting...');
 
     try {
@@ -250,17 +286,17 @@ function connectToBroker(url, clientId, token) {
         brokerSocket = new WebSocket(wsUrl);
 
         brokerSocket.onopen = async () => {
-            console.log('✅ Connected to Cloud Broker');
-            showToast('Connected to YeePrint Cloud Broker', 'success');
+            console.log('Connected to Cloud https://theautoprint.com');
             updateBrokerUI('connected', 'Online');
+            brokerReconnectDelay = 5000; // healthy connection — reset backoff
             startHeartbeat();
 
             try {
                 // Log event to print logs
                 await invoke('add_log_entry', {
-                    orderNumber: 'Broker Connection',
+                    orderNumber: 'Cloud Connection',
                     status: 'success',
-                    message: `Connected successfully to Broker: ${url}`,
+                    message: 'Connected successfully to https://theautoprint.com',
                     printerName: 'Cloud Server'
                 });
 
@@ -279,14 +315,7 @@ function connectToBroker(url, clientId, token) {
                     });
                     scannedPrinters = printers;
                 }
-                try {
-                    computerName = await invoke('get_computer_name');
-                    if (computerName.endsWith('.local')) {
-                        computerName = computerName.slice(0, -6);
-                    }
-                } catch (e) {
-                    console.error('Failed to get computer name:', e);
-                }
+                computerName = await getComputerName();
 
                 const payload = {
                     type: 'register',
@@ -296,9 +325,9 @@ function connectToBroker(url, clientId, token) {
                 };
 
                 await invoke('add_log_entry', {
-                    orderNumber: 'Broker Register',
+                    orderNumber: 'Cloud Sync',
                     status: 'success',
-                    message: `Sending register event with ${scannedPrinters.length} printers.`,
+                    message: `Registering device with ${scannedPrinters.length} printers.`,
                     printerName: 'Cloud Server'
                 });
 
@@ -306,11 +335,11 @@ function connectToBroker(url, clientId, token) {
             } catch (err) {
                 console.error('Error in onopen:', err);
                 await invoke('add_log_entry', {
-                    orderNumber: 'Broker Connection',
+                    orderNumber: 'Cloud Connection',
                     status: 'error',
-                    message: `onopen error: ${err.toString()}`,
+                    message: `Connection error: ${err.toString()}`,
                     printerName: 'Cloud Server'
-                }).catch(e => {});
+                }).catch(e => { });
             }
         };
 
@@ -326,17 +355,50 @@ function connectToBroker(url, clientId, token) {
                 // Heartbeat reply — nothing else to do (watchdog already reset above).
                 if (data.type === 'pong') return;
 
-                console.log('📨 WebSocket message received:', data);
+                // Server-side rejection (auth failure, plan connection limit...).
+                // Surface it to the user and back off: retrying every 5s can't
+                // succeed until the underlying condition changes.
+                if (data.type === 'error') {
+                    console.warn('Cloud error:', data.message);
+                    showToast(data.message || 'Connection rejected by cloud server', 'error');
+                    updateBrokerUI('error', data.code === 'connection_limit' ? 'Device limit reached' : 'Rejected');
+                    brokerReconnectDelay = 60000;
+                    invoke('add_log_entry', {
+                        orderNumber: 'Cloud Connection',
+                        status: 'error',
+                        message: data.message || 'Connection rejected by cloud server',
+                        printerName: 'Cloud Server'
+                    }).then(() => loadLogs()).catch(() => { });
+                    return;
+                }
+
+                console.log('WebSocket message received:', data);
 
                 if (data.type === 'print_job') {
                     addActivity('print', `Received job: ${data.title}`, new Date().toLocaleTimeString('en-US'));
+
+                    // Show desktop notification if enabled
+                    try {
+                        const settings = await invoke('get_settings');
+                        if (settings.enable_notifications && Notification.permission === 'granted') {
+                            new Notification('The Auto Print', {
+                                body: `New print job: ${data.title}`,
+                                icon: 'icons/128x128.png'
+                            });
+                        }
+                    } catch (err) {
+                        console.error('Failed to show notification:', err);
+                    }
 
                     try {
                         const log = await invoke('print_raw_job', {
                             jobId: data.job_id,
                             title: data.title,
                             contentType: data.content_type,
-                            content: data.content
+                            content: data.content,
+                            // Print only on the targeted printer (broker sends it);
+                            // omitted/null = legacy broker → all selected printers.
+                            printerName: data.printer_name || null
                         });
 
                         // Reply success
@@ -372,34 +434,34 @@ function connectToBroker(url, clientId, token) {
         };
 
         brokerSocket.onclose = (event) => {
-            console.log('🔌 Cloud Broker connection closed:', event.reason);
+            console.log('Cloud connection closed:', event.reason);
             stopHeartbeat();
             updateBrokerUI('disconnected', 'Offline');
 
             // Log event to print logs
             invoke('add_log_entry', {
-                orderNumber: 'Broker Connection',
+                orderNumber: 'Cloud Connection',
                 status: 'error',
-                message: `Connection closed: ${event.reason || 'No specific reason given'} (Code: ${event.code})`,
+                message: `Connection closed: ${event.reason || 'No specific reason given'}`,
                 printerName: 'Cloud Server'
             }).then(() => loadLogs()).catch(e => console.error(e));
 
-            // Queue reconnection
+            // Queue reconnection (5s normally, 60s after a server-side rejection)
             if (brokerReconnectTimeout) clearTimeout(brokerReconnectTimeout);
             brokerReconnectTimeout = setTimeout(() => {
                 connectToBroker(currentBrokerUrl, currentBrokerClientId, currentBrokerToken);
-            }, 5000);
+            }, brokerReconnectDelay);
         };
 
         brokerSocket.onerror = (error) => {
-            console.error('❌ WebSocket error:', error);
+            console.error('WebSocket error:', error);
             updateBrokerUI('error', 'Error');
 
             // Log event to print logs
             invoke('add_log_entry', {
-                orderNumber: 'Broker Connection',
+                orderNumber: 'Cloud Connection',
                 status: 'error',
-                message: `Connection error encountered on address: ${url}`,
+                message: 'Connection error encountered on https://theautoprint.com',
                 printerName: 'Cloud Server'
             }).then(() => loadLogs()).catch(e => console.error(e));
         };
@@ -427,7 +489,7 @@ function disconnectBroker() {
         }
         brokerSocket = null;
     }
-    console.log('🔌 Disconnected from Cloud Broker');
+    console.log('Disconnected from Cloud Broker');
 }
 
 // ── Heartbeat: keep the connection alive through proxies and detect a silently
@@ -445,9 +507,9 @@ function startHeartbeat() {
         }
         if (brokerPongWatchdog) clearTimeout(brokerPongWatchdog);
         brokerPongWatchdog = setTimeout(() => {
-            console.warn('⚠️ No response from broker — link is dead, forcing reconnect');
+            console.warn('No response from broker — link is dead, forcing reconnect');
             if (brokerSocket) {
-                try { brokerSocket.close(); } catch (e) {}
+                try { brokerSocket.close(); } catch (e) { }
             }
         }, 10000);
     }, 25000);
@@ -492,19 +554,27 @@ async function scanPrinters() {
         printers = await invoke('list_printers');
         await renderPrinters();
 
-        // Update dashboard printers list
         const settings = await invoke('get_settings');
-        updateDashboardPrinters(settings.selected_printers);
+        if ((!settings.selected_printers || settings.selected_printers.length === 0) && printers.length > 0) {
+            settings.selected_printers = [printers[0].name];
+            await invoke('save_settings', { settings });
+            await renderPrinters();
+        }
 
-        // Update printers in broker if online
+        // Update dashboard printers list
+        updateDashboardPrinters(settings.selected_printers);
+        initWebSocket(settings);
+
+        // Update printers in broker if online — computer_name is REQUIRED, else
+        // the broker regroups everything under "Unknown Computer".
         if (brokerSocket && brokerSocket.readyState === WebSocket.OPEN && currentBrokerClientId) {
             brokerSocket.send(JSON.stringify({
                 type: 'register',
                 client_id: currentBrokerClientId,
+                computer_name: await getComputerName(),
                 printers: printers
             }));
         }
-
     } catch (e) {
         showToast('Failed to scan printers: ' + e, 'error');
     } finally {
@@ -567,6 +637,11 @@ async function togglePrinter(printerName) {
 
         const index = settings.selected_printers.indexOf(printerName);
         if (index > -1) {
+            // Prevent deselecting the last selected printer
+            if (settings.selected_printers.length <= 1) {
+                showToast('You must select at least one printer for the app to run!', 'warning');
+                return;
+            }
             settings.selected_printers.splice(index, 1);
             showToast(`Unselected printer: ${printerName}`, 'info');
         } else {
@@ -772,14 +847,14 @@ async function setupEventListeners() {
             showToast(e.toString(), 'error');
         } finally {
             btn.disabled = false;
-            btn.innerHTML = '<span>🔑</span> Sign In';
+            btn.innerHTML = 'Sign In';
         }
     });
 
     // Listen for SSO login success event from Rust background server
     listen('sso_login_success', async (event) => {
         const { client_id, socket_token } = event.payload;
-        console.log('✅ SSO login success event received:', client_id);
+        console.log('SSO login success event received:', client_id);
 
         showToast(`Welcome, ${client_id}!`, 'success');
 
@@ -827,7 +902,7 @@ async function setupEventListeners() {
 
         try {
             const port = await invoke('start_sso_server');
-            console.log('📡 Local SSO server started for Google login on port:', port);
+            console.log('Local SSO server started for Google login on port:', port);
 
             const loginUrl = `https://theautoprint.com/wp-json/yeeprint-auth/v1/google-login?yp_port=${port}`;
             await invoke('open_url', { url: loginUrl });
@@ -879,6 +954,69 @@ async function setupEventListeners() {
             showToast('Failed to sign out: ' + e, 'error');
         }
     });
+
+    // Login Enter Keydown & Footer Links Actions
+    const loginUser = document.getElementById('login-username');
+    const loginPass = document.getElementById('login-password');
+    const loginBtn = document.getElementById('btn-login');
+
+    if (loginUser) {
+        loginUser.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                if (loginPass) loginPass.focus();
+            }
+        });
+    }
+
+    if (loginPass) {
+        loginPass.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                if (loginBtn) loginBtn.click();
+            }
+        });
+    }
+
+    const forgotLink = document.getElementById('link-forgot-password');
+    if (forgotLink) {
+        forgotLink.addEventListener('click', async (e) => {
+            e.preventDefault();
+            try {
+                await invoke('open_url', { url: 'https://theautoprint.com/wp-login.php?action=lostpassword' });
+            } catch (err) {
+                console.error('Failed to open forgot password link:', err);
+            }
+        });
+    }
+
+    const registerLink = document.getElementById('link-register');
+    if (registerLink) {
+        registerLink.addEventListener('click', async (e) => {
+            e.preventDefault();
+            try {
+                await invoke('open_url', { url: 'https://theautoprint.com/api/' });
+            } catch (err) {
+                console.error('Failed to open register link:', err);
+            }
+        });
+    }
+}
+
+async function ensureDefaultPrinterSelected() {
+    try {
+        const settings = await invoke('get_settings');
+        if ((!settings.selected_printers || settings.selected_printers.length === 0) && printers.length > 0) {
+            settings.selected_printers = [printers[0].name];
+            await invoke('save_settings', { settings });
+            showToast(`Default printer selected: ${printers[0].name}`, 'info');
+            await renderPrinters();
+            updateDashboardPrinters(settings.selected_printers);
+            initWebSocket(settings);
+        }
+    } catch (e) {
+        console.error('Failed to ensure default printer selection:', e);
+    }
 }
 
 async function init() {
@@ -923,6 +1061,7 @@ async function init() {
     try {
         printers = await invoke('list_printers');
         await renderPrinters();
+        await ensureDefaultPrinterSelected();
     } catch (e) {
         console.error('Initial printer scan failed:', e);
     }

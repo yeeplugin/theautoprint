@@ -18,7 +18,7 @@ fn save_debug_file(printer_name: &str, ext: &str, write: impl FnOnce(&Path) -> s
     }
     let file_path = debug_dir.join(format!("{}_print.{}", printer_name, ext));
     write(&file_path).map_err(|e| format!("Failed to save debug print file: {}", e))?;
-    println!("📄 [Simulated Print] Đã lưu bản in ra: {:?}", file_path);
+    println!("📄 [Simulated Print] Saved print job to: {:?}", file_path);
     Ok(())
 }
 
@@ -100,7 +100,7 @@ pub fn print_pdf(printer_name: &str, pdf_file_path: &Path) -> Result<(), String>
 
     #[cfg(windows)]
     {
-        use winprint::printer::{FilePrinter, WinPdfPrinter, PrinterDevice};
+        use winprint::printer::{FilePrinter, PdfiumPrinter, PrinterDevice};
         use winprint::ticket::PrintTicketBuilder;
 
         let device = PrinterDevice::all()
@@ -114,7 +114,7 @@ pub fn print_pdf(printer_name: &str, pdf_file_path: &Path) -> Result<(), String>
             .build()
             .map_err(|e| format!("Failed to build print ticket: {}", e))?;
 
-        WinPdfPrinter::new(device)
+        PdfiumPrinter::new(device)
             .print(pdf_file_path, ticket)
             .map_err(|e| format!("PDF print failed: {:?}", e))
     }

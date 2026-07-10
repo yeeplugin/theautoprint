@@ -1,0 +1,66 @@
+name: Build and Package MSIX
+on:
+  push:
+    branches: [ "main" ] # Nhánh chính chạy workflow
+  workflow_dispatch: # Cho phép chạy thủ công từ tab Actions
+
+jobs:
+  build-msix:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ─── Cài đặt môi trường Node.js ──────────────────────────────────────────
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: 'package-lock.json'
+
+      # ─── Cài đặt môi trường Rust ───────────────────────────────────────────
+      - name: Setup Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: 'src-tauri -> target'
+
+      # ─── Cài đặt các dependencies node_modules ──────────────────────────────
+      - name: Install dependencies
+        run: npm ci
+
+      # ─── Biên dịch ứng dụng Tauri (không tạo installer mặc định) ───────────
+      - name: Build Tauri App (no bundle)
+        run: npm run tauri build -- --no-bundle
+
+      # ─── Tạo thư mục staging và đóng gói thành file .msix bằng MakeAppx ──────
+      - name: Package to MSIX
+        run: |
+          mkdir -p build msix_stage/src-tauri/icons
+          cp AppxManifest.xml msix_stage/
+          cp "src-tauri/target/release/The Auto Print.exe" msix_stage/
+          cp src-tauri/icons/128x128.png msix_stage/src-tauri/icons/
+          cp src-tauri/icons/32x32.png msix_stage/src-tauri/icons/
+          makeappx pack /d msix_stage /p build/woo-auto-printer.msix
+        shell: bash
+
+      # ─── Ký số file MSIX (Chỉ cần thiết nếu cài đặt thủ công, Microsoft Store sẽ tự động ký khi upload) ───
+      - name: Sign MSIX Package
+        if: env.HAS_PFX == 'true'
+        env:
+          HAS_PFX: ${{ secrets.PFX_CERTIFICATE != '' }}
+        run: |
+          [System.IO.File]::WriteAllBytes("cert.pfx", [System.Convert]::FromBase64String("${{ secrets.PFX_CERTIFICATE }}"))
+          & "C:\Program Files (x86)\Windows Kits\10\bin\10.0.19041.0\x64\signtool.exe" sign /fd sha256 /a /f cert.pfx /p "${{ secrets.PFX_PASSWORD }}" build/woo-auto-printer.msix
+        shell: powershell
+
+      # ─── Lưu trữ sản phẩm sau khi build xong ─────────────────────────────────
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: woo-auto-printer-msix
+          path: build/woo-auto-printer.msix

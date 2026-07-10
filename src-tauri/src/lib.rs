@@ -80,7 +80,10 @@ fn clear_print_logs(state: tauri::State<'_, AppStateWrapper>) -> Result<(), Stri
     Ok(())
 }
 
-/// Print a raw job pushed from the WebSocket broker
+/// Print a raw job pushed from the WebSocket broker.
+///
+/// When the broker targets a specific printer (`printer_name`), print only
+/// there; otherwise (legacy broker) fall back to every selected printer.
 #[tauri::command]
 async fn print_raw_job(
     app: tauri::AppHandle,
@@ -89,10 +92,14 @@ async fn print_raw_job(
     title: String,
     content_type: String,
     content: String,
+    printer_name: Option<String>,
 ) -> Result<PrintLog, String> {
-    let printers = {
-        let s = state.state.lock().map_err(|e| e.to_string())?;
-        s.settings.selected_printers.clone()
+    let printers = match printer_name {
+        Some(name) if !name.is_empty() => vec![name],
+        _ => {
+            let s = state.state.lock().map_err(|e| e.to_string())?;
+            s.settings.selected_printers.clone()
+        }
     };
 
     if printers.is_empty() {
