@@ -40,29 +40,31 @@ jobs:
       # ─── Tạo thư mục staging và đóng gói thành file .msix bằng MakeAppx ──────
       - name: Package to MSIX
         run: |
-          mkdir -p build msix_stage/src-tauri/icons
-          cp AppxManifest.xml msix_stage/
+          New-Item -ItemType Directory -Force -Path build
+          New-Item -ItemType Directory -Force -Path msix_stage/src-tauri/icons
+          Copy-Item AppxManifest.xml msix_stage/
           
           # Tìm file .exe trong các đường dẫn target release có thể có
-          EXE_PATH=""
-          if [ -f "src-tauri/target/release/woo-auto-printer.exe" ]; then
-            EXE_PATH="src-tauri/target/release/woo-auto-printer.exe"
-          elif [ -f "src-tauri/target/x86_64-pc-windows-msvc/release/woo-auto-printer.exe" ]; then
-            EXE_PATH="src-tauri/target/x86_64-pc-windows-msvc/release/woo-auto-printer.exe"
-          fi
+          $exePath = ""
+          if (Test-Path "src-tauri/target/release/woo-auto-printer.exe") {
+            $exePath = "src-tauri/target/release/woo-auto-printer.exe"
+          } elseif (Test-Path "src-tauri/target/x86_64-pc-windows-msvc/release/woo-auto-printer.exe") {
+            $exePath = "src-tauri/target/x86_64-pc-windows-msvc/release/woo-auto-printer.exe"
+          }
           
-          if [ -z "$EXE_PATH" ]; then
-            echo "ERROR: Could not find woo-auto-printer.exe in target directories!"
+          if ($exePath -eq "") {
+            Write-Error "ERROR: Could not find woo-auto-printer.exe in target directories!"
             exit 1
-          fi
+          }
           
-          echo "Found compiled executable at: $EXE_PATH"
-          cp "$EXE_PATH" "msix_stage/The Auto Print.exe"
+          Write-Host "Found compiled executable at: $exePath"
+          Copy-Item $exePath "msix_stage/The Auto Print.exe"
           
-          cp src-tauri/icons/128x128.png msix_stage/src-tauri/icons/
-          cp src-tauri/icons/32x32.png msix_stage/src-tauri/icons/
-          makeappx pack /d msix_stage /p build/woo-auto-printer.msix
-        shell: bash
+          Copy-Item src-tauri/icons/128x128.png msix_stage/src-tauri/icons/
+          Copy-Item src-tauri/icons/32x32.png msix_stage/src-tauri/icons/
+          
+          & "C:\Program Files (x86)\Windows Kits\10\bin\10.0.19041.0\x64\makeappx.exe" pack /d msix_stage /p build/woo-auto-printer.msix
+        shell: powershell
 
       # ─── Ký số file MSIX (Chỉ cần thiết nếu cài đặt thủ công, Microsoft Store sẽ tự động ký khi upload) ───
       - name: Sign MSIX Package
