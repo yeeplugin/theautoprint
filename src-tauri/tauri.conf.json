@@ -35,9 +35,9 @@
         "icons/icon.icns",
         "icons/icon.ico"
       ],
-      "resources": [
-        "../resources/pdfium.dll"
-      ],
+      "resources": {
+        "../resources/pdfium.dll": "pdfium.dll"
+      },
       "windows": {
         "webviewInstallMode": {
           "type": "downloadBootstrapper",

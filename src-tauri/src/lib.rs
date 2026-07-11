@@ -346,23 +346,44 @@ pub fn run() {
                 use std::os::windows::ffi::OsStrExt;
                 use tauri::Manager;
 
-                if let Ok(resource_path) = app.path().resolve("resources/pdfium.dll", tauri::path::BaseDirectory::Resource) {
-                    if resource_path.exists() {
-                        let wide: Vec<u16> = resource_path.as_os_str().encode_wide().chain(std::iter::once(0)).collect();
-                        unsafe {
-                            extern "system" {
-                                fn LoadLibraryW(lpLibFileName: *const u16) -> *mut std::ffi::c_void;
-                            }
-                            let handle = LoadLibraryW(wide.as_ptr());
-                            if !handle.is_null() {
-                                println!("Successfully loaded pdfium.dll from resource path: {:?}", resource_path);
-                            } else {
-                                eprintln!("Failed to load pdfium.dll from resource path: {:?}", resource_path);
-                            }
-                        }
-                    } else {
-                        eprintln!("pdfium.dll resource path does not exist: {:?}", resource_path);
+                // The DLL is bundled at the resource-dir ROOT ("pdfium.dll" in the
+                // tauri.conf resources map), which on Windows is the exe dir.
+                // Probe every plausible location; first successful load wins.
+                let mut candidates: Vec<std::path::PathBuf> = Vec::new();
+                if let Ok(p) = app.path().resolve("pdfium.dll", tauri::path::BaseDirectory::Resource) {
+                    candidates.push(p);
+                }
+                // Older bundles: "../resources/pdfium.dll" landed in _up_/resources/.
+                if let Ok(p) = app.path().resolve("_up_/resources/pdfium.dll", tauri::path::BaseDirectory::Resource) {
+                    candidates.push(p);
+                }
+                if let Ok(exe) = std::env::current_exe() {
+                    if let Some(dir) = exe.parent() {
+                        candidates.push(dir.join("pdfium.dll"));
                     }
+                }
+                let mut loaded = false;
+                for resource_path in candidates {
+                    if !resource_path.exists() {
+                        continue;
+                    }
+                    let wide: Vec<u16> = resource_path.as_os_str().encode_wide().chain(std::iter::once(0)).collect();
+                    unsafe {
+                        extern "system" {
+                            fn LoadLibraryW(lpLibFileName: *const u16) -> *mut std::ffi::c_void;
+                        }
+                        let handle = LoadLibraryW(wide.as_ptr());
+                        if !handle.is_null() {
+                            println!("Successfully loaded pdfium.dll from: {:?}", resource_path);
+                            loaded = true;
+                            break;
+                        } else {
+                            eprintln!("Failed to load pdfium.dll from: {:?}", resource_path);
+                        }
+                    }
+                }
+                if !loaded {
+                    eprintln!("pdfium.dll not found in any known location — PDF printing will fail.");
                 }
             }
 
