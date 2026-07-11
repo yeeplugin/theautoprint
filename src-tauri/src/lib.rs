@@ -340,6 +340,32 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .manage(AppStateWrapper::new())
         .setup(|app| {
+            // Dyn load pdfium.dll on Windows so that winprint/pdfium-render can find it inside MS Store / MSIX sandbox
+            #[cfg(target_os = "windows")]
+            {
+                use std::os::windows::ffi::OsStrExt;
+                use tauri::Manager;
+
+                if let Ok(resource_path) = app.path().resolve("resources/pdfium.dll", tauri::path::BaseDirectory::Resource) {
+                    if resource_path.exists() {
+                        let wide: Vec<u16> = resource_path.as_os_str().encode_wide().chain(std::iter::once(0)).collect();
+                        unsafe {
+                            extern "system" {
+                                fn LoadLibraryW(lpLibFileName: *const u16) -> *mut std::ffi::c_void;
+                            }
+                            let handle = LoadLibraryW(wide.as_ptr());
+                            if !handle.is_null() {
+                                println!("Successfully loaded pdfium.dll from resource path: {:?}", resource_path);
+                            } else {
+                                eprintln!("Failed to load pdfium.dll from resource path: {:?}", resource_path);
+                            }
+                        }
+                    } else {
+                        eprintln!("pdfium.dll resource path does not exist: {:?}", resource_path);
+                    }
+                }
+            }
+
             let quit_i = MenuItem::with_id(app, "quit", "Exit Application", true, None::<&str>)?;
             let show_i = MenuItem::with_id(app, "show", "Open Window", true, None::<&str>)?;
             let menu = Menu::with_items(app, &[&show_i, &quit_i])?;
