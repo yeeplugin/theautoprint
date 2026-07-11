@@ -229,7 +229,7 @@ async fn start_sso_server(app_handle: tauri::AppHandle) -> Result<u16, String> {
                                     <!DOCTYPE html>
                                     <html>
                                     <head>
-                                        <title>YeePrint Login Success</title>
+                                        <title>The Auto Print Login Success</title>
                                         <style>
                                             body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f8fafc; color: #1e293b; }
                                             .card { background: white; padding: 40px; border-radius: 16px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); text-align: center; max-width: 400px; width: 100%; }
@@ -240,7 +240,7 @@ async fn start_sso_server(app_handle: tauri::AppHandle) -> Result<u16, String> {
                                     <body>
                                         <div class="card">
                                             <h1>✓ Authenticated Successfully</h1>
-                                            <p>Your YeePrint Desktop App is now connected. You can close this browser tab and return to the application.</p>
+                                            <p>Your The Auto Print Desktop App is now connected. You can close this browser tab and return to the application.</p>
                                         </div>
                                     </body>
                                     </html>

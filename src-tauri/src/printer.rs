@@ -206,7 +206,7 @@ pub fn print_raw(printer_name: &str, data: &[u8]) -> Result<(), String> {
 
     let raw_properties = [("document-format", "application/vnd.cups-raw")];
     let options = PrinterJobOptions {
-        name: Some("YeePrint raw job"),
+        name: Some("The Auto Print raw job"),
         raw_properties: &raw_properties,
         ..PrinterJobOptions::none()
     };
