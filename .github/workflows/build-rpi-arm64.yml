@@ -1,0 +1,59 @@
+name: Build Raspberry Pi OS (arm64)
+
+on:
+  workflow_dispatch: # Chạy thủ công từ tab Actions
+  push:
+    tags: [ "v*" ]
+
+jobs:
+  build-arm64:
+    # Runner ARM64 native — không cần cross-compile hay QEMU.
+    # Dùng 22.04 (glibc 2.35) để .deb chạy được trên Raspberry Pi OS Bookworm (glibc 2.36).
+    runs-on: ubuntu-22.04-arm
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ─── Dependencies hệ thống cho Tauri trên Linux ─────────────────────────
+      # libayatana-appindicator3-dev bắt buộc vì app dùng feature tray-icon.
+      - name: Install Linux build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            build-essential \
+            curl wget file \
+            libxdo-dev \
+            libssl-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: 'package-lock.json'
+
+      - name: Setup Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: 'src-tauri -> target'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # ─── Build .deb cho Raspberry Pi OS (Debian-based) ──────────────────────
+      - name: Build Tauri App (deb bundle)
+        run: npm run tauri build -- --bundles deb
+
+      - name: Upload .deb artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: woo-auto-printer-arm64-deb
+          path: src-tauri/target/release/bundle/deb/*.deb
+          if-no-files-found: error
