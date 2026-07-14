@@ -14,13 +14,13 @@
     -->
     <Identity 
         Name="TheAutoPrint.TheAutoPrint" 
-        Version="0.1.0.0" 
+        Version="1.1.0.0" 
         Publisher="CN=C07BB338-9F41-4FBE-8C7E-E08829359C37" 
         ProcessorArchitecture="x64" />
 
     <Properties>
-        <DisplayName>The Auto Print</DisplayName>
-        <PublisherDisplayName>The Auto Print</PublisherDisplayName>
+        <DisplayName>The Auto Print - Remote Printing</DisplayName>
+        <PublisherDisplayName>The Auto Print - Remote Printing</PublisherDisplayName>
         <Description>Automatically print WooCommerce orders through YeePrint Cloud service.</Description>
         <Logo>src-tauri/icons/128x128.png</Logo>
     </Properties>
@@ -45,9 +45,9 @@
             Id: Id của ứng dụng trong package (chữ cái và số, không khoảng trắng).
             Executable: Tên file chạy .exe được xuất ra sau khi build tauri (phần productName trong tauri.conf.json).
         -->
-        <Application Id="TheAutoPrintApp" Executable="The Auto Print.exe" uap10:RuntimeBehavior="packagedClassicApp" uap10:TrustLevel="mediumIL">
+        <Application Id="TheAutoPrintApp" Executable="The Auto Print - Remote Printing.exe" uap10:RuntimeBehavior="packagedClassicApp" uap10:TrustLevel="mediumIL">
             <uap:VisualElements 
-                DisplayName="The Auto Print" 
+                DisplayName="The Auto Print - Remote Printing" 
                 Description="Automatically print WooCommerce orders through YeePrint Cloud service." 
                 Square150x150Logo="src-tauri/icons/128x128.png" 
                 Square44x44Logo="src-tauri/icons/32x32.png" 

@@ -381,7 +381,7 @@ function connectToBroker(url, clientId, token) {
                     try {
                         const settings = await invoke('get_settings');
                         if (settings.enable_notifications && Notification.permission === 'granted') {
-                            new Notification('The Auto Print', {
+                            new Notification('The Auto Print - Remote Printing', {
                                 body: `New print job: ${data.title}`,
                                 icon: 'icons/128x128.png'
                             });

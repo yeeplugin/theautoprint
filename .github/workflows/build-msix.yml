@@ -58,7 +58,7 @@ jobs:
           }
           
           Write-Host "Found compiled executable at: $exePath"
-          Copy-Item $exePath "msix_stage/The Auto Print.exe"
+          Copy-Item $exePath "msix_stage/The Auto Print - Remote Printing.exe"
 
           # pdfium.dll phải nằm cạnh exe — thiếu nó là app lỗi khi in PDF.
           Copy-Item resources/pdfium.dll msix_stage/
