@@ -5,6 +5,29 @@
 const { invoke } = window.__TAURI__.core;
 const { listen } = window.__TAURI__.event;
 
+// Disable the webview's default right-click menu (Reload / Inspect Element…).
+// Editable fields keep their menu so users can still copy/paste.
+document.addEventListener('contextmenu', (e) => {
+    const t = e.target;
+    const editable = t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable);
+    if (!editable) {
+        e.preventDefault();
+    }
+});
+
+// Block the matching keyboard shortcuts too: F5 / Ctrl(Cmd)+R (reload),
+// F12 / Ctrl+Shift+I / Cmd+Opt+I (devtools).
+document.addEventListener('keydown', (e) => {
+    const k = (e.key || '').toLowerCase();
+    const reload = k === 'f5' || ((e.ctrlKey || e.metaKey) && k === 'r');
+    const devtools = k === 'f12'
+        || (e.ctrlKey && e.shiftKey && (k === 'i' || k === 'j' || k === 'c'))
+        || (e.metaKey && e.altKey && (k === 'i' || k === 'j' || k === 'c'));
+    if (reload || devtools) {
+        e.preventDefault();
+    }
+});
+
 // ============================================================
 // State
 // ============================================================
