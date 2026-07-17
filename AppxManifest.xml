@@ -14,20 +14,19 @@
     -->
     <Identity 
         Name="TheAutoPrint.TheAutoPrint" 
-        Version="1.1.1.0" 
+        Version="1.1.2.0" 
         Publisher="CN=C07BB338-9F41-4FBE-8C7E-E08829359C37" 
         ProcessorArchitecture="x64" />
 
     <Properties>
         <DisplayName>The Auto Print - Remote Printing</DisplayName>
-        <PublisherDisplayName>The Auto Print - Remote Printing</PublisherDisplayName>
-        <Description>Automatically print WooCommerce orders through YeePrint Cloud service.</Description>
+        <PublisherDisplayName>The Auto Print</PublisherDisplayName>
+        <Description>Automatically print orders through The Auto Print Cloud service.</Description>
         <Logo>src-tauri/icons/128x128.png</Logo>
     </Properties>
 
     <Resources>
         <Resource Language="en-us" />
-        <Resource Language="vi-vn" />
     </Resources>
 
     <Dependencies>
